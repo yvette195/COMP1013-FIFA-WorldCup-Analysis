@@ -1,0 +1,30 @@
+---
+title: "FIFA World Cup Data Analysis"
+author: "Nguyễn Đào Trường Vy"
+date: "2026-07-15"
+output: html_document
+---
+
+# Student Information
+
+**Student Name:** Nguyễn Đào Trường Vy  
+**Student Number:** 22202382
+**Subject Code:** COMP1013  
+**Subject Name:** Analytics Programming  
+
+**GitHub Repository:**  
+https://github.com/yvette195/COMP1013-FIFA-WorldCup-Analysis
+
+\newpage
+
+# Question 1: Data Inspection, Cleaning and Home Penalty Distribution
+
+## Rationale
+
+Explain why the selected data-cleaning methods and chart type are appropriate.
+
+## Data Inspection and Preparation
+
+```{r question-1-data-preparation, echo=TRUE}
+# Question 1 code will be written here
+```
