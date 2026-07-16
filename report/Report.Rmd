@@ -11,17 +11,10 @@ output:
 knitr::opts_chunk$set(
   echo = TRUE,
   message = FALSE,
-  warning = FALSE,
-  fig.align = "center"
+  warning = FALSE
 )
 
 library(tidyverse)
-
-# Allow the report to work whether it is run from the project root
-# or knitted from inside the report folder.
-project_root <- if (
-  file.exists("COMP1013-FIFA-WorldCup-Analysis.Rproj")
-) "." else ".."
 ```
 
 # Student Information
@@ -53,87 +46,65 @@ By including this statement, we the authors of this work, verify that:
 
 ## Rationale
 
-The four datasets were combined using their identifier variables so that match, team, stadium and tournament information could be analysed in one data frame. Missing values recorded as `"?"` were converted into `NA` during data import so that R could recognise them correctly. `Result`, `Stage`, `Country` and `ExtraTime` were converted to factors because they represent categorical information. `HomePenalty` and `AwayPenalty` were converted to numeric variables because they contain counts of penalty goals.
+The four datasets were joined so that match, team, stadium and tournament information could be analysed together. Missing values written as `"?"` were changed to `NA`. The variables `Result`, `Stage`, `Country` and `ExtraTime` were changed to factors because they contain categories. `HomePenalty` and `AwayPenalty` were changed to numeric variables because they contain numbers of penalty goals.
 
-A bar chart was selected to display `HomePenalty` because it is a discrete count variable with a small number of integer values. Each bar shows how frequently a particular number of home-team penalty goals occurred among matches involving a penalty shootout.
+A bar chart was selected because `HomePenalty` contains separate whole-number values. The height of each bar shows how many penalty-shootout matches had each home-team penalty score.
 
-## Data Inspection and Preparation
+## Load and Join the Data
 
-```{r question-1-import}
-# Import all four datasets.
-# The na.strings argument converts every "?" into NA during import.
-matches <- read.csv(
-  file.path(project_root, "data", "Matches.csv"),
-  na.strings = "?",
-  stringsAsFactors = FALSE
-)
+```{r question-1-load}
+# Read the four CSV files.
+# Report.Rmd is inside the report folder, so ../data goes back to the project folder.
+matches <- read.csv("../data/Matches.csv")
+stadiums <- read.csv("../data/Stadiums.csv")
+teams <- read.csv("../data/Teams.csv")
+tournaments <- read.csv("../data/Tournaments.csv")
 
-stadiums <- read.csv(
-  file.path(project_root, "data", "Stadiums.csv"),
-  na.strings = "?",
-  stringsAsFactors = FALSE
-)
-
-teams <- read.csv(
-  file.path(project_root, "data", "Teams.csv"),
-  na.strings = "?",
-  stringsAsFactors = FALSE
-)
-
-tournaments <- read.csv(
-  file.path(project_root, "data", "Tournaments.csv"),
-  na.strings = "?",
-  stringsAsFactors = FALSE
-)
+# Change every "?" value to NA.
+matches[matches == "?"] <- NA
+stadiums[stadiums == "?"] <- NA
+teams[teams == "?"] <- NA
+tournaments[tournaments == "?"] <- NA
 ```
 
 ```{r question-1-join}
-# Prepare a copy of the team data for home-team information.
-home_teams <- teams %>%
-  transmute(
-    HomeTeamID = TeamID,
-    HomeTeamName = TeamName,
-    HomeTeamCode = TeamCode
-  )
-
-# Prepare a second copy for away-team information.
-away_teams <- teams %>%
-  transmute(
-    AwayTeamID = TeamID,
-    AwayTeamName = TeamName,
-    AwayTeamCode = TeamCode
-  )
-
-# Join match, team, stadium and tournament information.
+# Join team information for the home team and away team.
 df <- matches %>%
-  left_join(home_teams, by = "HomeTeamID") %>%
-  left_join(away_teams, by = "AwayTeamID") %>%
+  left_join(
+    teams %>%
+      rename(
+        HomeTeamID = TeamID,
+        HomeTeamName = TeamName,
+        HomeTeamCode = TeamCode
+      ),
+    by = "HomeTeamID"
+  ) %>%
+  left_join(
+    teams %>%
+      rename(
+        AwayTeamID = TeamID,
+        AwayTeamName = TeamName,
+        AwayTeamCode = TeamCode
+      ),
+    by = "AwayTeamID"
+  ) %>%
   left_join(stadiums, by = "StadiumID") %>%
   left_join(tournaments, by = "TournamentID")
 ```
 
-```{r question-1-inspection}
-# Inspect the dimensions, variable names and variable types.
+## Inspect and Clean the Data
+
+```{r question-1-inspect}
+# Display the first six rows.
+head(df)
+
+# Check the number of rows and columns.
 dim(df)
-names(df)
+
+# Check the variable types.
 str(df)
 
-# Present the first six observations using the main analytical variables.
-df %>%
-  select(
-    MatchID,
-    TournamentName,
-    Stage,
-    HomeTeamName,
-    AwayTeamName,
-    HomeTeamScore,
-    AwayTeamScore,
-    PenaltyShootout
-  ) %>%
-  head(6) %>%
-  knitr::kable(caption = "Sample of the combined FIFA World Cup dataset")
-
-# Present a concise summary of the main variables used in Question 1.
+# Display a summary of the main variables.
 summary(
   df[c(
     "Result",
@@ -147,123 +118,72 @@ summary(
 )
 ```
 
-```{r question-1-conversion}
+```{r question-1-clean}
 # Convert categorical variables to factors.
-# Convert penalty variables to numeric and replace missing values with zero.
-df <- df %>%
-  mutate(
-    Result = as.factor(Result),
-    Stage = as.factor(Stage),
-    Country = as.factor(Country),
-    ExtraTime = as.factor(ExtraTime),
-    HomePenalty = replace_na(as.numeric(HomePenalty), 0),
-    AwayPenalty = replace_na(as.numeric(AwayPenalty), 0)
-  )
+df$Result <- as.factor(df$Result)
+df$Stage <- as.factor(df$Stage)
+df$Country <- as.factor(df$Country)
+df$ExtraTime <- as.factor(df$ExtraTime)
+
+# Convert penalty variables to numeric.
+df$HomePenalty <- as.numeric(df$HomePenalty)
+df$AwayPenalty <- as.numeric(df$AwayPenalty)
+
+# Replace missing penalty values with zero.
+df$HomePenalty[is.na(df$HomePenalty)] <- 0
+df$AwayPenalty[is.na(df$AwayPenalty)] <- 0
 ```
 
 ## Code Testing
 
 ```{r question-1-testing}
-# Test that joining the datasets did not change the number of matches.
-stopifnot(nrow(df) == nrow(matches))
+# The number of rows should be unchanged after joining.
+nrow(matches)
+nrow(df)
 
-# Check whether important joined fields contain missing values.
-join_missing_values <- colSums(
-  is.na(
-    df[c(
-      "HomeTeamName",
-      "AwayTeamName",
-      "StadiumName",
-      "TournamentName"
-    )]
-  )
-)
+# Check the classes after conversion.
+class(df$Result)
+class(df$Stage)
+class(df$Country)
+class(df$ExtraTime)
+class(df$HomePenalty)
+class(df$AwayPenalty)
 
-join_missing_values
-
-# Confirm that the required variables have the intended data types.
-converted_classes <- sapply(
-  df[c(
-    "Result",
-    "Stage",
-    "Country",
-    "ExtraTime",
-    "HomePenalty",
-    "AwayPenalty"
-  )],
-  class
-)
-
-converted_classes
-
-# Confirm that no missing values remain in the penalty variables.
-penalty_missing_values <- colSums(
-  is.na(df[c("HomePenalty", "AwayPenalty")])
-)
-
-penalty_missing_values
-
-# Stop the report if any required conversion was unsuccessful.
-stopifnot(
-  is.factor(df$Result),
-  is.factor(df$Stage),
-  is.factor(df$Country),
-  is.factor(df$ExtraTime),
-  is.numeric(df$HomePenalty),
-  is.numeric(df$AwayPenalty),
-  !anyNA(df$HomePenalty),
-  !anyNA(df$AwayPenalty)
-)
+# Check that no missing penalty values remain.
+sum(is.na(df$HomePenalty))
+sum(is.na(df$AwayPenalty))
 ```
+
+The two row counts should be equal. The four categorical variables should return `"factor"`, the two penalty variables should return `"numeric"`, and both missing-value checks should return zero.
 
 ## Results and Interpretation
 
-```{r question-1-penalty-data}
-# Retain only matches that involved a penalty shootout.
+```{r question-1-results}
+# Keep only matches involving a penalty shootout.
 penalty_matches <- df %>%
   filter(PenaltyShootout == 1)
 
-# Confirm that the filtered dataset contains observations.
-stopifnot(nrow(penalty_matches) > 0)
+# Create a frequency table for HomePenalty.
+penalty_table <- table(penalty_matches$HomePenalty)
+penalty_table
 
-# Count the frequency of each HomePenalty value.
-penalty_distribution <- penalty_matches %>%
-  count(HomePenalty, name = "NumberOfMatches") %>%
-  arrange(HomePenalty)
-
-# Calculate values used in the written interpretation.
-most_common_penalty <- penalty_distribution %>%
-  slice_max(NumberOfMatches, n = 1, with_ties = FALSE)
-
-top_two_share <- penalty_distribution %>%
-  slice_max(NumberOfMatches, n = 2, with_ties = FALSE) %>%
-  summarise(
-    Percentage = 100 * sum(NumberOfMatches) / nrow(penalty_matches)
-  ) %>%
-  pull(Percentage)
-
-knitr::kable(
-  penalty_distribution,
-  caption = "Distribution of home-team penalty goals in penalty shootouts"
-)
+# Find the most common HomePenalty value.
+most_common_penalty <- names(penalty_table)[which.max(penalty_table)]
+most_common_count <- max(penalty_table)
 ```
 
 ```{r question-1-plot, fig.width=8, fig.height=5}
-ggplot(
-  penalty_matches,
-  aes(x = factor(HomePenalty))
-) +
+ggplot(penalty_matches, aes(x = factor(HomePenalty))) +
   geom_bar() +
   labs(
     title = "Distribution of Home-Team Penalty Goals",
-    subtitle = "FIFA World Cup matches involving a penalty shootout",
     x = "Home-team penalty goals",
     y = "Number of matches"
   ) +
   theme_minimal()
 ```
 
-There were `r nrow(penalty_matches)` matches involving a penalty shootout. `HomePenalty` ranged from `r min(penalty_matches$HomePenalty)` to `r max(penalty_matches$HomePenalty)` goals. The most frequently observed value was `r most_common_penalty$HomePenalty`, occurring in `r most_common_penalty$NumberOfMatches` matches. The two most frequent penalty totals together represented `r round(top_two_share, 1)`% of all penalty-shootout matches, showing that the distribution was concentrated around a small number of values rather than being evenly spread across the full range.
+There were `r nrow(penalty_matches)` matches involving a penalty shootout. The most common value of `HomePenalty` was `r most_common_penalty`, and it occurred in `r most_common_count` matches. The taller bars show the penalty scores that occurred most often, while shorter bars represent less common scores.
 
 \newpage
 
@@ -271,194 +191,119 @@ There were `r nrow(penalty_matches)` matches involving a penalty shootout. `Home
 
 ## Rationale
 
-`HomeTeamScore` is a numerical count variable, so histograms are appropriate for showing its distribution. A bin width of one goal was selected because football scores occur as whole numbers. The bin boundary was set to `-0.5` so that each bar is centred on an integer score such as 0, 1, 2 or 3.
+`HomeTeamScore` is a numerical variable, so histograms were used to show its distribution. A bin width of one was selected because football scores are whole numbers. The distributions were compared first by `Stage`, then by `TournamentName`, and finally by the three required `AwayTeamScore` groups.
 
-Separate faceted histograms are used for `Stage` and `TournamentName`. This is more readable than placing both variables in one very large grid. Summary tables containing the number of matches, mean, median, standard deviation and maximum score are also included to support the visual comparisons. For the second part, `AwayTeamScore` is grouped into `0–1 goals`, `2–3 goals`, and `4 or more goals`, as specified in the task.
+The `aggregate()` function was used to calculate simple group means and medians. This provides numerical information to support the patterns shown in the histograms.
 
-## Analysis by Competition Stage
+## Distribution by Competition Stage
 
 ```{r question-2-stage-summary}
-# Summarise the distribution of HomeTeamScore within each competition stage.
-stage_score_summary <- df %>%
-  group_by(Stage) %>%
-  summarise(
-    NumberOfMatches = n(),
-    MeanHomeScore = mean(HomeTeamScore),
-    MedianHomeScore = median(HomeTeamScore),
-    SDHomeScore = sd(HomeTeamScore),
-    MaximumHomeScore = max(HomeTeamScore),
-    .groups = "drop"
-  ) %>%
-  arrange(desc(MeanHomeScore))
-
-knitr::kable(
-  stage_score_summary,
-  digits = 2,
-  caption = "Home-team score summary by competition stage"
+# Calculate the mean and median HomeTeamScore for each stage.
+stage_mean <- aggregate(
+  HomeTeamScore ~ Stage,
+  mean,
+  data = df
 )
+
+stage_median <- aggregate(
+  HomeTeamScore ~ Stage,
+  median,
+  data = df
+)
+
+stage_mean
+stage_median
 ```
 
-```{r question-2-stage-histogram, fig.width=9, fig.height=7}
-# Use one-goal bins and facet the histogram by Stage.
+```{r question-2-stage-plot, fig.width=9, fig.height=7}
 ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(
-    binwidth = 1,
-    boundary = -0.5
-  ) +
-  facet_wrap(
-    ~ Stage,
-    ncol = 3,
-    scales = "free_y"
-  ) +
-  scale_x_continuous(
-    breaks = seq(
-      0,
-      max(df$HomeTeamScore),
-      by = 1
-    )
-  ) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ Stage) +
   labs(
-    title = "Distribution of Home-Team Scores by Competition Stage",
+    title = "Home-Team Scores by Competition Stage",
     x = "Home-team goals",
     y = "Number of matches"
   ) +
   theme_minimal()
 ```
 
-## Analysis by Tournament Name
+## Distribution by Tournament Name
 
 ```{r question-2-tournament-summary}
-# Summarise the distribution of HomeTeamScore within each tournament.
-tournament_score_summary <- df %>%
-  group_by(TournamentName) %>%
-  summarise(
-    NumberOfMatches = n(),
-    MeanHomeScore = mean(HomeTeamScore),
-    MedianHomeScore = median(HomeTeamScore),
-    SDHomeScore = sd(HomeTeamScore),
-    MaximumHomeScore = max(HomeTeamScore),
-    .groups = "drop"
-  ) %>%
-  arrange(TournamentName)
-
-knitr::kable(
-  tournament_score_summary,
-  digits = 2,
-  caption = "Home-team score summary by tournament"
+# Calculate the mean and median HomeTeamScore for each tournament.
+tournament_mean <- aggregate(
+  HomeTeamScore ~ TournamentName,
+  mean,
+  data = df
 )
+
+tournament_median <- aggregate(
+  HomeTeamScore ~ TournamentName,
+  median,
+  data = df
+)
+
+tournament_mean
+tournament_median
 ```
 
-```{r question-2-tournament-histogram, fig.width=10, fig.height=13}
-# Facet the histogram by TournamentName to compare World Cup editions.
+```{r question-2-tournament-plot, fig.width=10, fig.height=12}
 ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(
-    binwidth = 1,
-    boundary = -0.5
-  ) +
-  facet_wrap(
-    ~ TournamentName,
-    ncol = 4,
-    scales = "free_y"
-  ) +
-  scale_x_continuous(
-    breaks = seq(
-      0,
-      max(df$HomeTeamScore),
-      by = 1
-    )
-  ) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ TournamentName) +
   labs(
-    title = "Distribution of Home-Team Scores by Tournament",
+    title = "Home-Team Scores by Tournament",
     x = "Home-team goals",
     y = "Number of matches"
   ) +
-  theme_minimal() +
-  theme(
-    strip.text = element_text(size = 7)
-  )
+  theme_minimal()
 ```
 
-## Analysis by Away-Team Score Group
+## Distribution by Away-Team Score Group
 
-```{r question-2-away-score-groups}
-# Create the three AwayTeamScore groups required by the task.
-df <- df %>%
-  mutate(
-    AwayScoreGroup = case_when(
-      AwayTeamScore <= 1 ~ "0-1 goals",
-      AwayTeamScore <= 3 ~ "2-3 goals",
-      AwayTeamScore >= 4 ~ "4 or more goals"
-    ),
-    AwayScoreGroup = factor(
-      AwayScoreGroup,
-      levels = c(
-        "0-1 goals",
-        "2-3 goals",
-        "4 or more goals"
-      )
-    )
-  )
+```{r question-2-away-groups}
+# Create an empty variable for the away-team score groups.
+df$AwayScoreGroup <- NA
 
-# Summarise HomeTeamScore within each away-team score group.
-away_group_summary <- df %>%
-  group_by(AwayScoreGroup) %>%
-  summarise(
-    NumberOfMatches = n(),
-    MeanHomeScore = mean(HomeTeamScore),
-    MedianHomeScore = median(HomeTeamScore),
-    SDHomeScore = sd(HomeTeamScore),
-    MaximumHomeScore = max(HomeTeamScore),
-    .groups = "drop"
-  )
+# Assign each match to one of the three required groups.
+df$AwayScoreGroup[df$AwayTeamScore <= 1] <- "0-1 goals"
 
-# Identify the most common HomeTeamScore in each group.
-away_group_modes <- df %>%
-  count(
-    AwayScoreGroup,
-    HomeTeamScore,
-    name = "NumberOfMatches"
-  ) %>%
-  group_by(AwayScoreGroup) %>%
-  slice_max(
-    NumberOfMatches,
-    n = 1,
-    with_ties = FALSE
-  ) %>%
-  ungroup()
+df$AwayScoreGroup[
+  df$AwayTeamScore >= 2 &
+    df$AwayTeamScore <= 3
+] <- "2-3 goals"
 
-knitr::kable(
-  away_group_summary,
-  digits = 2,
-  caption = "Home-team score summary by away-team score group"
+df$AwayScoreGroup[df$AwayTeamScore >= 4] <- "4 or more goals"
+
+# Convert the new variable to a factor.
+df$AwayScoreGroup <- as.factor(df$AwayScoreGroup)
+
+# Check the number of matches in each group.
+table(df$AwayScoreGroup)
+
+# Calculate the mean and median HomeTeamScore for each group.
+away_group_mean <- aggregate(
+  HomeTeamScore ~ AwayScoreGroup,
+  mean,
+  data = df
 )
 
-knitr::kable(
-  away_group_modes,
-  caption = "Most common home-team score within each away-team score group"
+away_group_median <- aggregate(
+  HomeTeamScore ~ AwayScoreGroup,
+  median,
+  data = df
 )
+
+away_group_mean
+away_group_median
 ```
 
-```{r question-2-away-group-histogram, fig.width=9, fig.height=5}
-# Compare HomeTeamScore distributions across the three AwayTeamScore groups.
+```{r question-2-away-plot, fig.width=9, fig.height=5}
 ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(
-    binwidth = 1,
-    boundary = -0.5
-  ) +
-  facet_wrap(
-    ~ AwayScoreGroup,
-    nrow = 1,
-    scales = "free_y"
-  ) +
-  scale_x_continuous(
-    breaks = seq(
-      0,
-      max(df$HomeTeamScore),
-      by = 1
-    )
-  ) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ AwayScoreGroup) +
   labs(
-    title = "Distribution of Home-Team Scores by Away-Team Score Group",
+    title = "Home-Team Scores by Away-Team Score Group",
     x = "Home-team goals",
     y = "Number of matches"
   ) +
@@ -468,88 +313,60 @@ ggplot(df, aes(x = HomeTeamScore)) +
 ## Code Testing
 
 ```{r question-2-testing}
-# Confirm that both score variables are numeric, complete and non-negative.
-stopifnot(
-  is.numeric(df$HomeTeamScore),
-  is.numeric(df$AwayTeamScore),
-  !anyNA(df$HomeTeamScore),
-  !anyNA(df$AwayTeamScore),
-  all(df$HomeTeamScore >= 0),
-  all(df$AwayTeamScore >= 0)
-)
+# Check the score variable types.
+class(df$HomeTeamScore)
+class(df$AwayTeamScore)
 
-# Confirm that every match was assigned to exactly one away-score group.
-away_group_counts <- table(
-  df$AwayScoreGroup,
-  useNA = "ifany"
-)
+# Check for missing score values.
+sum(is.na(df$HomeTeamScore))
+sum(is.na(df$AwayTeamScore))
 
-away_group_counts
+# Check the new group variable.
+class(df$AwayScoreGroup)
+table(df$AwayScoreGroup)
+sum(is.na(df$AwayScoreGroup))
 
-stopifnot(
-  !anyNA(df$AwayScoreGroup),
-  sum(away_group_counts) == nrow(df),
-  all(levels(df$AwayScoreGroup) == c(
-    "0-1 goals",
-    "2-3 goals",
-    "4 or more goals"
-  )),
-  sum(stage_score_summary$NumberOfMatches) == nrow(df),
-  sum(tournament_score_summary$NumberOfMatches) == nrow(df),
-  sum(away_group_summary$NumberOfMatches) == nrow(df)
-)
+# Check that all matches are included in the three groups.
+sum(table(df$AwayScoreGroup))
+nrow(df)
 ```
+
+`HomeTeamScore` and `AwayTeamScore` should be numeric variables; R may display their class as `integer` because football goals are whole numbers. The missing-value checks should return zero. `AwayScoreGroup` should be a factor, and the total number shown by its frequency table should equal the total number of rows in `df`.
 
 ## Results and Interpretation
 
 ```{r question-2-interpretation-values, include=FALSE}
-# Calculate values used in the written interpretation.
-highest_stage <- stage_score_summary %>%
-  slice_max(
-    MeanHomeScore,
-    n = 1,
-    with_ties = FALSE
-  )
+# Find the stage with the highest and lowest mean HomeTeamScore.
+highest_stage_row <- which.max(stage_mean$HomeTeamScore)
+lowest_stage_row <- which.min(stage_mean$HomeTeamScore)
 
-lowest_stage <- stage_score_summary %>%
-  slice_min(
-    MeanHomeScore,
-    n = 1,
-    with_ties = FALSE
-  )
+highest_stage <- stage_mean$Stage[highest_stage_row]
+highest_stage_mean <- stage_mean$HomeTeamScore[highest_stage_row]
 
-highest_tournament <- tournament_score_summary %>%
-  slice_max(
-    MeanHomeScore,
-    n = 1,
-    with_ties = FALSE
-  )
+lowest_stage <- stage_mean$Stage[lowest_stage_row]
+lowest_stage_mean <- stage_mean$HomeTeamScore[lowest_stage_row]
 
-lowest_tournament <- tournament_score_summary %>%
-  slice_min(
-    MeanHomeScore,
-    n = 1,
-    with_ties = FALSE
-  )
+# Find the tournament with the highest and lowest mean HomeTeamScore.
+highest_tournament_row <- which.max(tournament_mean$HomeTeamScore)
+lowest_tournament_row <- which.min(tournament_mean$HomeTeamScore)
 
-highest_away_group <- away_group_summary %>%
-  slice_max(
-    MeanHomeScore,
-    n = 1,
-    with_ties = FALSE
-  )
+highest_tournament <- tournament_mean$TournamentName[highest_tournament_row]
+highest_tournament_mean <- tournament_mean$HomeTeamScore[highest_tournament_row]
 
-home_score_zero_to_three <- 100 * mean(
-  df$HomeTeamScore >= 0 &
-    df$HomeTeamScore <= 3
-)
+lowest_tournament <- tournament_mean$TournamentName[lowest_tournament_row]
+lowest_tournament_mean <- tournament_mean$HomeTeamScore[lowest_tournament_row]
+
+# Find the away-score group with the highest mean HomeTeamScore.
+highest_group_row <- which.max(away_group_mean$HomeTeamScore)
+highest_group <- away_group_mean$AwayScoreGroup[highest_group_row]
+highest_group_mean <- away_group_mean$HomeTeamScore[highest_group_row]
 ```
 
-Across competition stages, **`r highest_stage$Stage`** had the highest average home-team score at `r round(highest_stage$MeanHomeScore, 2)` goals, while **`r lowest_stage$Stage`** had the lowest average at `r round(lowest_stage$MeanHomeScore, 2)` goals. The faceted histograms show how the centre, spread and frequency of high-scoring matches differ across stages. The free vertical scales are used because the number of matches varies substantially between stages.
+The stage with the highest average home-team score was **`r highest_stage`**, with an average of `r round(highest_stage_mean, 2)` goals. The lowest average occurred in **`r lowest_stage`**, with `r round(lowest_stage_mean, 2)` goals. The stage histograms also show whether the scores were concentrated at low values or spread across a wider range.
 
-Across tournament editions, **`r highest_tournament$TournamentName`** recorded the highest average home-team score at `r round(highest_tournament$MeanHomeScore, 2)` goals, whereas **`r lowest_tournament$TournamentName`** recorded the lowest average at `r round(lowest_tournament$MeanHomeScore, 2)` goals. Overall, `r round(home_score_zero_to_three, 1)`% of all home-team scores were between 0 and 3 goals, indicating that most matches were concentrated in the lower scoring range.
+The tournament with the highest average home-team score was **`r highest_tournament`**, with `r round(highest_tournament_mean, 2)` goals. The lowest tournament average occurred in **`r lowest_tournament`**, with `r round(lowest_tournament_mean, 2)` goals. The tournament histograms make it possible to compare how the score distributions changed between World Cup editions.
 
-For the away-team score groups, **`r highest_away_group$AwayScoreGroup`** had the highest average home-team score at `r round(highest_away_group$MeanHomeScore, 2)` goals. The grouped histograms and mode table show whether higher away-team scoring is associated with a shift in the home-team score distribution. These results describe an association in the observed matches and should not be interpreted as evidence that the away-team score causes the home-team score.
+Among the three away-team score groups, **`r highest_group`** had the highest average home-team score at `r round(highest_group_mean, 2)` goals. This result describes a relationship in the dataset, but it does not prove that the away-team score caused the home-team score.
 
 \newpage
 

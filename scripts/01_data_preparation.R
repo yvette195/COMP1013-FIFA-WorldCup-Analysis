@@ -1,109 +1,85 @@
-# Question 1: Data inspection, cleaning and home penalty distribution
+# Question 1: Data inspection, cleaning and penalty distribution
 
 library(tidyverse)
 
-# Allow the script to work from either the project root or the scripts folder.
-project_root <- if (
-  file.exists("COMP1013-FIFA-WorldCup-Analysis.Rproj")
-) "." else ".."
+# Read the four datasets.
+matches <- read.csv("data/Matches.csv")
+stadiums <- read.csv("data/Stadiums.csv")
+teams <- read.csv("data/Teams.csv")
+tournaments <- read.csv("data/Tournaments.csv")
 
-# Import datasets and convert "?" into NA.
-matches <- read.csv(
-  file.path(project_root, "data", "Matches.csv"),
-  na.strings = "?",
-  stringsAsFactors = FALSE
-)
-
-stadiums <- read.csv(
-  file.path(project_root, "data", "Stadiums.csv"),
-  na.strings = "?",
-  stringsAsFactors = FALSE
-)
-
-teams <- read.csv(
-  file.path(project_root, "data", "Teams.csv"),
-  na.strings = "?",
-  stringsAsFactors = FALSE
-)
-
-tournaments <- read.csv(
-  file.path(project_root, "data", "Tournaments.csv"),
-  na.strings = "?",
-  stringsAsFactors = FALSE
-)
-
-# Prepare home-team and away-team lookup tables.
-home_teams <- teams %>%
-  transmute(
-    HomeTeamID = TeamID,
-    HomeTeamName = TeamName,
-    HomeTeamCode = TeamCode
-  )
-
-away_teams <- teams %>%
-  transmute(
-    AwayTeamID = TeamID,
-    AwayTeamName = TeamName,
-    AwayTeamCode = TeamCode
-  )
+# Change "?" values to NA.
+matches[matches == "?"] <- NA
+stadiums[stadiums == "?"] <- NA
+teams[teams == "?"] <- NA
+tournaments[tournaments == "?"] <- NA
 
 # Join all datasets.
 df <- matches %>%
-  left_join(home_teams, by = "HomeTeamID") %>%
-  left_join(away_teams, by = "AwayTeamID") %>%
+  left_join(
+    teams %>%
+      rename(
+        HomeTeamID = TeamID,
+        HomeTeamName = TeamName,
+        HomeTeamCode = TeamCode
+      ),
+    by = "HomeTeamID"
+  ) %>%
+  left_join(
+    teams %>%
+      rename(
+        AwayTeamID = TeamID,
+        AwayTeamName = TeamName,
+        AwayTeamCode = TeamCode
+      ),
+    by = "AwayTeamID"
+  ) %>%
   left_join(stadiums, by = "StadiumID") %>%
   left_join(tournaments, by = "TournamentID")
 
-# Inspect the combined data.
+# Inspect the data.
+head(df)
 dim(df)
-names(df)
 str(df)
+summary(df)
 
 # Convert the required variables.
-df <- df %>%
-  mutate(
-    Result = as.factor(Result),
-    Stage = as.factor(Stage),
-    Country = as.factor(Country),
-    ExtraTime = as.factor(ExtraTime),
-    HomePenalty = replace_na(as.numeric(HomePenalty), 0),
-    AwayPenalty = replace_na(as.numeric(AwayPenalty), 0)
-  )
+df$Result <- as.factor(df$Result)
+df$Stage <- as.factor(df$Stage)
+df$Country <- as.factor(df$Country)
+df$ExtraTime <- as.factor(df$ExtraTime)
 
-# Test the join and conversions.
-stopifnot(
-  nrow(df) == nrow(matches),
-  is.factor(df$Result),
-  is.factor(df$Stage),
-  is.factor(df$Country),
-  is.factor(df$ExtraTime),
-  is.numeric(df$HomePenalty),
-  is.numeric(df$AwayPenalty),
-  !anyNA(df$HomePenalty),
-  !anyNA(df$AwayPenalty)
-)
+df$HomePenalty <- as.numeric(df$HomePenalty)
+df$AwayPenalty <- as.numeric(df$AwayPenalty)
 
-# Filter penalty shootout matches and summarise HomePenalty.
+df$HomePenalty[is.na(df$HomePenalty)] <- 0
+df$AwayPenalty[is.na(df$AwayPenalty)] <- 0
+
+# Test the cleaned variables.
+nrow(matches)
+nrow(df)
+
+class(df$Result)
+class(df$Stage)
+class(df$Country)
+class(df$ExtraTime)
+class(df$HomePenalty)
+class(df$AwayPenalty)
+
+sum(is.na(df$HomePenalty))
+sum(is.na(df$AwayPenalty))
+
+# Analyse penalty shootout matches.
 penalty_matches <- df %>%
   filter(PenaltyShootout == 1)
 
-stopifnot(nrow(penalty_matches) > 0)
+penalty_table <- table(penalty_matches$HomePenalty)
+print(penalty_table)
 
-penalty_distribution <- penalty_matches %>%
-  count(HomePenalty, name = "NumberOfMatches") %>%
-  arrange(HomePenalty)
-
-print(penalty_distribution)
-
-# Plot the distribution.
-ggplot(
-  penalty_matches,
-  aes(x = factor(HomePenalty))
-) +
+ggplot(penalty_matches, aes(x = factor(HomePenalty))) +
   geom_bar() +
   labs(
     title = "Distribution of Home-Team Penalty Goals",
-    subtitle = "FIFA World Cup matches involving a penalty shootout",
     x = "Home-team penalty goals",
     y = "Number of matches"
   ) +

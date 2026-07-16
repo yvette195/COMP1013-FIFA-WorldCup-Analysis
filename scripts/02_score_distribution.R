@@ -1,179 +1,113 @@
 # Question 2: Distribution of home-team scores
+# Run this script after 01_data_preparation.R so that df exists.
 
 library(tidyverse)
 
-# Allow the script to work from either the project root or the scripts folder.
-project_root <- if (
-  file.exists("COMP1013-FIFA-WorldCup-Analysis.Rproj")
-) "." else ".."
-
-# Run the Question 1 preparation script to create the cleaned data frame 'df'.
-source(
-  file.path(
-    project_root,
-    "scripts",
-    "01_data_preparation.R"
-  )
+# Mean and median HomeTeamScore by Stage.
+stage_mean <- aggregate(
+  HomeTeamScore ~ Stage,
+  mean,
+  data = df
 )
 
-# Summarise HomeTeamScore by competition stage.
-stage_score_summary <- df %>%
-  group_by(Stage) %>%
-  summarise(
-    NumberOfMatches = n(),
-    MeanHomeScore = mean(HomeTeamScore),
-    MedianHomeScore = median(HomeTeamScore),
-    SDHomeScore = sd(HomeTeamScore),
-    MaximumHomeScore = max(HomeTeamScore),
-    .groups = "drop"
-  ) %>%
-  arrange(desc(MeanHomeScore))
+stage_median <- aggregate(
+  HomeTeamScore ~ Stage,
+  median,
+  data = df
+)
 
-print(stage_score_summary)
+print(stage_mean)
+print(stage_median)
 
-# Plot HomeTeamScore by stage.
+# Histogram by Stage.
 ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(
-    binwidth = 1,
-    boundary = -0.5
-  ) +
-  facet_wrap(
-    ~ Stage,
-    ncol = 3,
-    scales = "free_y"
-  ) +
-  scale_x_continuous(
-    breaks = seq(
-      0,
-      max(df$HomeTeamScore),
-      by = 1
-    )
-  ) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ Stage) +
   labs(
-    title = "Distribution of Home-Team Scores by Competition Stage",
+    title = "Home-Team Scores by Competition Stage",
     x = "Home-team goals",
     y = "Number of matches"
   ) +
   theme_minimal()
 
-# Summarise HomeTeamScore by tournament.
-tournament_score_summary <- df %>%
-  group_by(TournamentName) %>%
-  summarise(
-    NumberOfMatches = n(),
-    MeanHomeScore = mean(HomeTeamScore),
-    MedianHomeScore = median(HomeTeamScore),
-    SDHomeScore = sd(HomeTeamScore),
-    MaximumHomeScore = max(HomeTeamScore),
-    .groups = "drop"
-  ) %>%
-  arrange(TournamentName)
+# Mean and median HomeTeamScore by TournamentName.
+tournament_mean <- aggregate(
+  HomeTeamScore ~ TournamentName,
+  mean,
+  data = df
+)
 
-print(tournament_score_summary)
+tournament_median <- aggregate(
+  HomeTeamScore ~ TournamentName,
+  median,
+  data = df
+)
 
-# Plot HomeTeamScore by tournament.
+print(tournament_mean)
+print(tournament_median)
+
+# Histogram by TournamentName.
 ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(
-    binwidth = 1,
-    boundary = -0.5
-  ) +
-  facet_wrap(
-    ~ TournamentName,
-    ncol = 4,
-    scales = "free_y"
-  ) +
-  scale_x_continuous(
-    breaks = seq(
-      0,
-      max(df$HomeTeamScore),
-      by = 1
-    )
-  ) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ TournamentName) +
   labs(
-    title = "Distribution of Home-Team Scores by Tournament",
-    x = "Home-team goals",
-    y = "Number of matches"
-  ) +
-  theme_minimal() +
-  theme(
-    strip.text = element_text(size = 7)
-  )
-
-# Create the required AwayTeamScore groups.
-df <- df %>%
-  mutate(
-    AwayScoreGroup = case_when(
-      AwayTeamScore <= 1 ~ "0-1 goals",
-      AwayTeamScore <= 3 ~ "2-3 goals",
-      AwayTeamScore >= 4 ~ "4 or more goals"
-    ),
-    AwayScoreGroup = factor(
-      AwayScoreGroup,
-      levels = c(
-        "0-1 goals",
-        "2-3 goals",
-        "4 or more goals"
-      )
-    )
-  )
-
-# Summarise HomeTeamScore by away-team score group.
-away_group_summary <- df %>%
-  group_by(AwayScoreGroup) %>%
-  summarise(
-    NumberOfMatches = n(),
-    MeanHomeScore = mean(HomeTeamScore),
-    MedianHomeScore = median(HomeTeamScore),
-    SDHomeScore = sd(HomeTeamScore),
-    MaximumHomeScore = max(HomeTeamScore),
-    .groups = "drop"
-  )
-
-print(away_group_summary)
-
-# Plot HomeTeamScore by away-team score group.
-ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(
-    binwidth = 1,
-    boundary = -0.5
-  ) +
-  facet_wrap(
-    ~ AwayScoreGroup,
-    nrow = 1,
-    scales = "free_y"
-  ) +
-  scale_x_continuous(
-    breaks = seq(
-      0,
-      max(df$HomeTeamScore),
-      by = 1
-    )
-  ) +
-  labs(
-    title = "Distribution of Home-Team Scores by Away-Team Score Group",
+    title = "Home-Team Scores by Tournament",
     x = "Home-team goals",
     y = "Number of matches"
   ) +
   theme_minimal()
 
-# Test data types, score ranges and grouping completeness.
-away_group_counts <- table(
-  df$AwayScoreGroup,
-  useNA = "ifany"
+# Create the three required AwayTeamScore groups.
+df$AwayScoreGroup <- NA
+
+df$AwayScoreGroup[df$AwayTeamScore <= 1] <- "0-1 goals"
+
+df$AwayScoreGroup[
+  df$AwayTeamScore >= 2 &
+    df$AwayTeamScore <= 3
+] <- "2-3 goals"
+
+df$AwayScoreGroup[df$AwayTeamScore >= 4] <- "4 or more goals"
+
+df$AwayScoreGroup <- as.factor(df$AwayScoreGroup)
+
+# Check group sizes.
+print(table(df$AwayScoreGroup))
+
+# Mean and median HomeTeamScore by AwayScoreGroup.
+away_group_mean <- aggregate(
+  HomeTeamScore ~ AwayScoreGroup,
+  mean,
+  data = df
 )
 
-print(away_group_counts)
-
-stopifnot(
-  is.numeric(df$HomeTeamScore),
-  is.numeric(df$AwayTeamScore),
-  !anyNA(df$HomeTeamScore),
-  !anyNA(df$AwayTeamScore),
-  all(df$HomeTeamScore >= 0),
-  all(df$AwayTeamScore >= 0),
-  !anyNA(df$AwayScoreGroup),
-  sum(away_group_counts) == nrow(df),
-  sum(stage_score_summary$NumberOfMatches) == nrow(df),
-  sum(tournament_score_summary$NumberOfMatches) == nrow(df),
-  sum(away_group_summary$NumberOfMatches) == nrow(df)
+away_group_median <- aggregate(
+  HomeTeamScore ~ AwayScoreGroup,
+  median,
+  data = df
 )
+
+print(away_group_mean)
+print(away_group_median)
+
+# Histogram by AwayScoreGroup.
+ggplot(df, aes(x = HomeTeamScore)) +
+  geom_histogram(binwidth = 1) +
+  facet_wrap(~ AwayScoreGroup) +
+  labs(
+    title = "Home-Team Scores by Away-Team Score Group",
+    x = "Home-team goals",
+    y = "Number of matches"
+  ) +
+  theme_minimal()
+
+# Simple code testing.
+class(df$HomeTeamScore)
+class(df$AwayTeamScore)
+sum(is.na(df$HomeTeamScore))
+sum(is.na(df$AwayTeamScore))
+class(df$AwayScoreGroup)
+table(df$AwayScoreGroup)
+sum(is.na(df$AwayScoreGroup))
+sum(table(df$AwayScoreGroup))
+nrow(df)
