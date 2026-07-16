@@ -3,10 +3,10 @@
 library(tidyverse)
 
 # Read the four datasets.
-matches <- read.csv("data/Matches.csv")
-stadiums <- read.csv("data/Stadiums.csv")
-teams <- read.csv("data/Teams.csv")
-tournaments <- read.csv("data/Tournaments.csv")
+matches <- read.csv("../data/Matches.csv")
+stadiums <- read.csv("../data/Stadiums.csv")
+teams <- read.csv("../data/Teams.csv")
+tournaments <- read.csv("../data/Tournaments.csv")
 
 # Change "?" values to NA.
 matches[matches == "?"] <- NA
