@@ -377,27 +377,136 @@ Among the three away-team score groups, **`r highest_group`** had the highest av
 
 ## Rationale
 
-_To be completed._
+Only matches where `PenaltyShootout` equals 1 were selected because this question focuses on matches decided by a penalty shootout. The matches were grouped separately by home team and away team because the assignment requires two different rankings.
+
+The number of matches for each team was counted using `group_by()` and `summarise()`. The results were sorted from highest to lowest, and `head()` was used to select the first five teams.
+
+## Filter Penalty Shootout Matches
+
+```{r question-3-filter}
+# Keep only matches that involved a penalty shootout.
+penalty_matches <- df %>%
+  filter(PenaltyShootout == 1)
+
+# Check the number of penalty-shootout matches.
+nrow(penalty_matches)
+
+# Check that the filtered data contains only value 1.
+table(penalty_matches$PenaltyShootout)
+```
 
 ## Top Five Home Teams
 
 ```{r question-3-home-teams}
-# Question 3 code will be added here.
+# Group the penalty matches by home-team name and code.
+# Count the number of matches for each home team.
+home_penalty_count <- penalty_matches %>%
+  group_by(HomeTeamName, HomeTeamCode) %>%
+  summarise(NumberOfMatches = n())
+
+# Sort the teams from the highest count to the lowest count.
+home_penalty_count <- home_penalty_count %>%
+  arrange(desc(NumberOfMatches))
+
+# Select the first five teams.
+top5_home <- head(home_penalty_count, 5)
+
+# Change the column names to match the assignment requirement.
+names(top5_home) <- c(
+  "TeamName",
+  "TeamCode",
+  "NumberOfMatches"
+)
+
+# Display the top five home teams as a table.
+top5_home
 ```
 
 ## Top Five Away Teams
 
 ```{r question-3-away-teams}
-# Question 3 code will be added here.
+# Group the penalty matches by away-team name and code.
+# Count the number of matches for each away team.
+away_penalty_count <- penalty_matches %>%
+  group_by(AwayTeamName, AwayTeamCode) %>%
+  summarise(NumberOfMatches = n())
+
+# Sort the teams from the highest count to the lowest count.
+away_penalty_count <- away_penalty_count %>%
+  arrange(desc(NumberOfMatches))
+
+# Select the first five teams.
+top5_away <- head(away_penalty_count, 5)
+
+# Change the column names to match the assignment requirement.
+names(top5_away) <- c(
+  "TeamName",
+  "TeamCode",
+  "NumberOfMatches"
+)
+
+# Display the top five away teams as a table.
+top5_away
 ```
 
 ## Code Testing
 
-_To be completed._
+```{r question-3-testing}
+# Check that all filtered matches involved a penalty shootout.
+table(penalty_matches$PenaltyShootout)
+
+# Both top-five tables should contain five rows.
+nrow(top5_home)
+nrow(top5_away)
+
+# Check that both tables have the required column names.
+names(top5_home)
+names(top5_away)
+
+# Check for missing values in team names and codes.
+sum(is.na(top5_home$TeamName))
+sum(is.na(top5_home$TeamCode))
+
+sum(is.na(top5_away$TeamName))
+sum(is.na(top5_away$TeamCode))
+
+# Check that the match counts are sorted from high to low.
+top5_home$NumberOfMatches
+top5_away$NumberOfMatches
+```
+
+The `PenaltyShootout` table should contain only the value 1. Both top-five tables should contain five rows and the columns `TeamName`, `TeamCode`, and `NumberOfMatches`. The missing-value checks should return zero. The match counts should be displayed from the highest value to the lowest value.
 
 ## Results and Interpretation
 
-_To be completed._
+```{r question-3-comparison, include=FALSE}
+# Find teams that appear in both top-five tables.
+common_teams <- top5_home$TeamName[
+  top5_home$TeamName %in% top5_away$TeamName
+]
+
+# Count the number of teams appearing in both lists.
+number_common <- length(common_teams)
+
+# Check whether the two rankings have the same teams in the same order.
+same_ranking <- identical(
+  top5_home$TeamName,
+  top5_away$TeamName
+)
+
+# Store the leading home and away teams for the discussion.
+leading_home_team <- top5_home$TeamName[1]
+leading_home_count <- top5_home$NumberOfMatches[1]
+
+leading_away_team <- top5_away$TeamName[1]
+leading_away_count <- top5_away$NumberOfMatches[1]
+```
+
+The national team ranked first in the home-team table was **`r leading_home_team`**, which participated in `r leading_home_count` penalty-shootout matches as the home team. The national team ranked first in the away-team table was **`r leading_away_team`**, which participated in `r leading_away_count` matches as the away team.
+
+There were `r number_common` teams appearing in both top-five lists: **`r paste(common_teams, collapse = ", ")`**. The rankings were **`r ifelse(same_ranking, "the same", "different")`** when the team names and their order were compared.
+
+The difference between the two rankings may occur because teams can be recorded as the home team in some matches and the away team in other matches. These labels do not necessarily mean that the match was played in the team’s own country.
 
 \newpage
 
@@ -405,21 +514,193 @@ _To be completed._
 
 ## Selected Factors and Rationale
 
-_To be completed._
+The two selected factors were `Stage` and `ExtraTime`.
 
-## Analysis
+`Stage` was selected because match conditions may differ between group-stage matches and knockout-stage matches. For example, teams may use different strategies in finals, semi-finals, or group-stage matches.
 
-```{r question-4-analysis}
-# Question 4 code will be added here.
+`ExtraTime` was selected because matches that continue beyond regular time may have a different distribution of results compared with matches that finish during regular time.
+
+Frequency tables were used to show the number of home-team wins, away-team wins, and draws. Percentage tables were also created because the numbers of matches in the different groups are not equal. A proportional stacked bar chart was selected because it allows the three result categories to be compared within each group.
+
+## Overall Match Results
+
+```{r question-4-overall-results}
+# Count the number of matches in each Result category.
+overall_result_table <- table(df$Result)
+
+overall_result_table
+
+# Find the most common match result.
+most_common_result <- names(overall_result_table)[
+  which.max(overall_result_table)
+]
+
+most_common_result_count <- max(overall_result_table)
+```
+
+## Factor 1: Competition Stage
+
+```{r question-4-stage-table}
+# Create a table of Stage and Result.
+stage_result_count <- table(
+  df$Stage,
+  df$Result
+)
+
+stage_result_count
+
+# Convert the counts into row percentages.
+# margin = 1 calculates percentages within each Stage.
+stage_result_percent <- prop.table(
+  stage_result_count,
+  margin = 1
+) * 100
+
+# Round the percentages to one decimal place.
+stage_result_percent <- round(
+  stage_result_percent,
+  1
+)
+
+stage_result_percent
+```
+
+```{r question-4-stage-plot, fig.width=9, fig.height=6}
+# Create a proportional bar chart of Result for each Stage.
+ggplot(df, aes(x = Stage, fill = Result)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Match Results by Competition Stage",
+    x = "Competition stage",
+    y = "Proportion of matches",
+    fill = "Match result"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(
+      angle = 45,
+      hjust = 1
+    )
+  )
+```
+
+## Factor 2: Extra Time
+
+```{r question-4-extra-time-table}
+# Create a table of ExtraTime and Result.
+extra_time_result_count <- table(
+  df$ExtraTime,
+  df$Result
+)
+
+extra_time_result_count
+
+# Convert the counts into row percentages.
+# margin = 1 calculates percentages within each ExtraTime group.
+extra_time_result_percent <- prop.table(
+  extra_time_result_count,
+  margin = 1
+) * 100
+
+# Round the percentages to one decimal place.
+extra_time_result_percent <- round(
+  extra_time_result_percent,
+  1
+)
+
+extra_time_result_percent
+```
+
+```{r question-4-extra-time-plot, fig.width=8, fig.height=5}
+# Create a proportional bar chart of Result by ExtraTime.
+ggplot(df, aes(x = ExtraTime, fill = Result)) +
+  geom_bar(position = "fill") +
+  labs(
+    title = "Match Results by Extra-Time Category",
+    x = "Extra-time category",
+    y = "Proportion of matches",
+    fill = "Match result"
+  ) +
+  theme_minimal()
 ```
 
 ## Code Testing
 
-_To be completed._
+```{r question-4-testing}
+# Check that the three variables are factors.
+class(df$Result)
+class(df$Stage)
+class(df$ExtraTime)
+
+# Display the categories in each variable.
+levels(df$Result)
+levels(df$Stage)
+levels(df$ExtraTime)
+
+# Check for missing values.
+sum(is.na(df$Result))
+sum(is.na(df$Stage))
+sum(is.na(df$ExtraTime))
+
+# The total number in each table should equal the number of rows in df.
+sum(stage_result_count)
+nrow(df)
+
+sum(extra_time_result_count)
+nrow(df)
+
+# Each row of the percentage tables should total approximately 100%.
+rowSums(stage_result_percent)
+rowSums(extra_time_result_percent)
+```
+
+`Result`, `Stage`, and `ExtraTime` should return `"factor"`. The missing-value checks should return zero. The totals from the two count tables should equal the total number of rows in `df`. Each row of the percentage tables should total approximately 100%. Small differences such as 99.9% or 100.1% may occur because the percentages were rounded.
 
 ## Results and Interpretation
 
-_To be completed._
+```{r question-4-interpretation-values, include=FALSE}
+# Find the column containing home-team wins.
+home_result_column <- which(
+  tolower(colnames(stage_result_percent)) ==
+    "home team win"
+)
+
+# Find the Stage with the highest percentage of home-team wins.
+highest_home_stage_row <- which.max(
+  stage_result_percent[, home_result_column]
+)
+
+highest_home_stage <- rownames(
+  stage_result_percent
+)[highest_home_stage_row]
+
+highest_home_stage_percent <- stage_result_percent[
+  highest_home_stage_row,
+  home_result_column
+]
+
+# Find the ExtraTime category with the highest percentage of home-team wins.
+highest_home_extra_row <- which.max(
+  extra_time_result_percent[, home_result_column]
+)
+
+highest_home_extra <- rownames(
+  extra_time_result_percent
+)[highest_home_extra_row]
+
+highest_home_extra_percent <- extra_time_result_percent[
+  highest_home_extra_row,
+  home_result_column
+]
+```
+
+Across all matches, the most common result was **`r most_common_result`**, which occurred in `r most_common_result_count` matches.
+
+For competition stage, **`r highest_home_stage`** had the highest proportion of home-team wins, at `r highest_home_stage_percent`%. The percentage table and proportional bar chart show that the distribution of home-team wins, away-team wins, and draws was not identical across all competition stages. This suggests that `Stage` is associated with differences in match outcomes.
+
+For extra time, category **`r highest_home_extra`** had the highest proportion of home-team wins, at `r highest_home_extra_percent`%. The percentage table and bar chart allow the result distribution for matches with different extra-time categories to be compared.
+
+These findings show associations in the FIFA World Cup dataset. They do not prove that competition stage or extra time directly caused a particular match result.
 
 \newpage
 
