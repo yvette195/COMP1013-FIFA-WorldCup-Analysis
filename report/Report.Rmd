@@ -14,6 +14,14 @@ knitr::opts_chunk$set(
 )
 
 library(tidyverse)
+
+# Colour palette used for all charts.
+darkest_colour <- "#041420"
+dark_colour <- "#042631"
+middle_colour <- "#4B7273"
+light_colour <- "#86B9B1"
+lightest_colour <- "#CFD6D6"
+
 ```
 
 # Student Information
@@ -49,9 +57,11 @@ By including this statement, we the authors of this work, verify that:
 
 ## Rationale
 
-The four datasets were joined so that match, team, stadium and tournament information could be analysed together. Missing values `"?"` were changed to `NA`. The variables `Result`, `Stage`, `Country` and `ExtraTime` were changed to factors because they contain categories. `HomePenalty` and `AwayPenalty` were changed to numeric variables because they contain numbers of penalty goals.
+I joined the four datasets because the information for this analysis was not stored in only one file. The `Matches` dataset contains the match results and scores, while the other datasets provide the team, stadium and tournament information. Joining them made it easier for me to use all the information in one data frame.
 
-A bar chart was choosen because `HomePenalty` contains distinct integer values. The height of each bar shows how many penalty shootouts had penalty scores for each home team.
+I changed `"?"` to `NA` because `"?"` is only a text value, but `NA` is recognised by R as a missing value. I changed `Result`, `Stage`, `Country` and `ExtraTime` to factors because these variables contain categories. I changed `HomePenalty` and `AwayPenalty` to numeric because they show the number of penalty goals.
+
+I used a bar chart for `HomePenalty` because penalty scores are separate whole numbers. The chart makes it easy to see which penalty score appeared more often and which score appeared less often.
 
 ## Load and Join the Data
 
@@ -156,7 +166,9 @@ sum(is.na(df$HomePenalty))
 sum(is.na(df$AwayPenalty))
 ```
 
-The two row counts should be equal. The four categorical variables should return `"factor"`, the two penalty variables should return `"numeric"`, and both missing-value checks should return zero.
+The number of rows in `matches` and `df` should be the same. This is important because joining the other datasets should add more columns, but it should not remove or add match records.
+
+The four category variables should return `"factor"`. The penalty variables should return `"numeric"`. The two missing-value checks should return zero. These checks help me confirm that the data was changed into the correct format before doing the analysis.
 
 ## Results and Interpretation
 
@@ -176,7 +188,10 @@ most_common_count <- max(penalty_table)
 
 ```{r question-1-plot, fig.width=8, fig.height=5}
 ggplot(penalty_matches, aes(x = factor(HomePenalty))) +
-  geom_bar() +
+  geom_bar(
+    fill = darkest_colour,
+    colour = "white"
+  ) +
   labs(
     title = "Distribution of Home-Team Penalty Goals",
     x = "Home-team penalty goals",
@@ -185,7 +200,9 @@ ggplot(penalty_matches, aes(x = factor(HomePenalty))) +
   theme_minimal()
 ```
 
-There were `r nrow(penalty_matches)` matches involving a penalty shootout. The most common value of `HomePenalty` was `r most_common_penalty`, and it occurred in `r most_common_count` matches. The taller bars show the penalty scores that occurred most often, while shorter bars represent less common scores.
+There were `r nrow(penalty_matches)` matches that included a penalty shootout. The most common value of `HomePenalty` was `r most_common_penalty`. This value appeared in `r most_common_count` matches.
+
+From the chart, some penalty scores appeared more often than the other scores. The taller bars mean that the score happened in more matches. The shorter bars mean that the score was less common. The distribution was not equal because the bars did not have the same height.
 
 \newpage
 
@@ -193,9 +210,11 @@ There were `r nrow(penalty_matches)` matches involving a penalty shootout. The m
 
 ## Rationale
 
-`HomeTeamScore` is a numerical variable, so histograms were used to show its distribution. A bin width of one was selected because football scores are whole numbers. The distributions were compared first by `Stage`, then by `TournamentName`, and finally by the three required `AwayTeamScore` groups.
+I used histograms because `HomeTeamScore` is a numerical variable. Football scores are whole numbers, so I used a bin width of one. This means that each bar represents one score, such as 0, 1, 2 or 3 goals.
 
-The `aggregate()` function was used to calculate simple group means and medians. This provides numerical information to support the patterns shown in the histograms.
+I compared the home-team scores by `Stage`, `TournamentName` and `AwayScoreGroup`. I separated these comparisons because putting all the information in one chart would make the chart too crowded and difficult to read.
+
+I also used `aggregate()` to calculate the mean and median for each group. The histograms show the shape of the score distribution, while the mean and median give simple numbers that can be compared between groups.
 
 ## Distribution by Competition Stage
 
@@ -219,7 +238,11 @@ stage_median
 
 ```{r question-2-stage-plot, fig.width=9, fig.height=7}
 ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(binwidth = 1) +
+  geom_histogram(
+    binwidth = 1,
+    fill = darkest_colour,
+    colour = "white"
+  ) +
   facet_wrap(~ Stage) +
   labs(
     title = "Home-Team Scores by Competition Stage",
@@ -251,7 +274,11 @@ tournament_median
 
 ```{r question-2-tournament-plot, fig.width=10, fig.height=12}
 ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(binwidth = 1) +
+  geom_histogram(
+    binwidth = 1,
+    fill = darkest_colour,
+    colour = "white"
+  ) +
   facet_wrap(~ TournamentName) +
   labs(
     title = "Home-Team Scores by Tournament",
@@ -283,6 +310,22 @@ df$AwayScoreGroup <- as.factor(df$AwayScoreGroup)
 # Check the number of matches in each group.
 table(df$AwayScoreGroup)
 
+# Count the number of matches in each group.
+away_group_counts <- table(df$AwayScoreGroup)
+
+# Put the groups in order from the smallest count to the largest count.
+away_group_order <- names(sort(away_group_counts))
+
+# Give a light colour to the smallest group and a dark colour to the largest group.
+away_group_colours <- setNames(
+  c(
+    lightest_colour,
+    middle_colour,
+    darkest_colour
+  ),
+  away_group_order
+)
+
 # Calculate the mean and median HomeTeamScore for each group.
 away_group_mean <- aggregate(
   HomeTeamScore ~ AwayScoreGroup,
@@ -301,9 +344,22 @@ away_group_median
 ```
 
 ```{r question-2-away-plot, fig.width=9, fig.height=5}
-ggplot(df, aes(x = HomeTeamScore)) +
-  geom_histogram(binwidth = 1) +
+ggplot(
+  df,
+  aes(
+    x = HomeTeamScore,
+    fill = AwayScoreGroup
+  )
+) +
+  geom_histogram(
+    binwidth = 1,
+    colour = "white"
+  ) +
   facet_wrap(~ AwayScoreGroup) +
+  scale_fill_manual(
+    values = away_group_colours
+  ) +
+  guides(fill = "none") +
   labs(
     title = "Home-Team Scores by Away-Team Score Group",
     x = "Home-team goals",
@@ -333,7 +389,9 @@ sum(table(df$AwayScoreGroup))
 nrow(df)
 ```
 
-`HomeTeamScore` and `AwayTeamScore` should be numeric variables; R may display their class as `integer` because football goals are whole numbers. The missing-value checks should return zero. `AwayScoreGroup` should be a factor, and the total number shown by its frequency table should equal the total number of rows in `df`.
+`HomeTeamScore` and `AwayTeamScore` should be numeric variables. R may show `"integer"` because football scores are whole numbers, and this is still suitable for this analysis.
+
+The missing-value results should be zero. `AwayScoreGroup` should be a factor and it should not contain missing values. The total number of matches in the three groups should also be equal to the number of rows in `df`. This check confirms that every match was placed into one group.
 
 ## Results and Interpretation
 
@@ -364,11 +422,15 @@ highest_group <- away_group_mean$AwayScoreGroup[highest_group_row]
 highest_group_mean <- away_group_mean$HomeTeamScore[highest_group_row]
 ```
 
-The stage with the highest average home-team score was **`r highest_stage`**, with an average of `r round(highest_stage_mean, 2)` goals. The lowest average occurred in **`r lowest_stage`**, with `r round(lowest_stage_mean, 2)` goals. The stage histograms also show whether the scores were concentrated at low values or spread across a wider range.
+The stage with the highest average home-team score was **`r highest_stage`**, with an average of `r round(highest_stage_mean, 2)` goals. The stage with the lowest average was **`r lowest_stage`**, with an average of `r round(lowest_stage_mean, 2)` goals.
 
-The tournament with the highest average home-team score was **`r highest_tournament`**, with `r round(highest_tournament_mean, 2)` goals. The lowest tournament average occurred in **`r lowest_tournament`**, with `r round(lowest_tournament_mean, 2)` goals. The tournament histograms make it possible to compare how the score distributions changed between World Cup editions.
+The histograms show that most home-team scores were around the lower score values. Some stages had more matches than the other stages, so their bars were also taller. The chart is useful for comparing the general score pattern, but the mean is also needed because the number of matches was different between stages.
 
-Among the three away-team score groups, **`r highest_group`** had the highest average home-team score at `r round(highest_group_mean, 2)` goals. This result describes a relationship in the dataset, but it does not prove that the away-team score caused the home-team score.
+The tournament with the highest average home-team score was **`r highest_tournament`**, with `r round(highest_tournament_mean, 2)` goals. The tournament with the lowest average was **`r lowest_tournament`**, with `r round(lowest_tournament_mean, 2)` goals.
+
+The score distribution was not exactly the same for every tournament. Some tournaments had more high-scoring matches, while some tournaments had more scores around zero, one or two goals. However, the number of matches was also different between tournaments, so the charts should be compared together with the mean and median.
+
+For the away-team score groups, **`r highest_group`** had the highest average home-team score, at `r round(highest_group_mean, 2)` goals. This shows that the home-team score was different between the three away-score groups. However, this is only a relationship found in the dataset. It does not mean that the away-team score directly caused the home-team score.
 
 \newpage
 
@@ -376,9 +438,11 @@ Among the three away-team score groups, **`r highest_group`** had the highest av
 
 ## Rationale
 
-Only matches where `PenaltyShootout` equals 1 were selected because this question focuses on matches decided by a penalty shootout. The matches were grouped separately by home team and away team because the assignment requires two different rankings.
+I first selected only the matches where `PenaltyShootout` was equal to 1. I did this because Question 3 only asks about matches that included a penalty shootout.
 
-The number of matches for each team was counted using `group_by()` and `summarise()`. The results were sorted from highest to lowest, and `head()` was used to select the first five teams.
+After filtering the matches, I grouped the data by the team name and team code. I counted the number of matches for each team by using `summarise()` and `n()`.
+
+I did the home-team and away-team analysis separately because a team may be recorded as the home team in one match and the away team in another match. I then sorted the results from the highest number to the lowest number. Finally, I used `head()` to select the first five teams.
 
 ## Filter Penalty Shootout Matches
 
@@ -474,7 +538,9 @@ top5_home$NumberOfMatches
 top5_away$NumberOfMatches
 ```
 
-The `PenaltyShootout` table should contain only the value 1. Both top-five tables should contain five rows and the columns `TeamName`, `TeamCode`, and `NumberOfMatches`. The missing-value checks should return zero. The match counts should be displayed from the highest value to the lowest value.
+The `PenaltyShootout` table should only show the value 1. This confirms that the filtered data only contains penalty-shootout matches.
+
+Both final tables should contain five rows. They should also contain the columns `TeamName`, `TeamCode` and `NumberOfMatches`. The missing-value checks should return zero. The match counts should be shown from the highest value to the lowest value.
 
 ## Results and Interpretation
 
@@ -501,11 +567,13 @@ leading_away_team <- top5_away$TeamName[1]
 leading_away_count <- top5_away$NumberOfMatches[1]
 ```
 
-The national team ranked first in the home-team table was **`r leading_home_team`**, which participated in `r leading_home_count` penalty-shootout matches as the home team. The national team ranked first in the away-team table was **`r leading_away_team`**, which participated in `r leading_away_count` matches as the away team.
+The first team in the home-team table was **`r leading_home_team`**. This team appeared in `r leading_home_count` penalty-shootout matches as the home team.
 
-There were `r number_common` teams appearing in both top-five lists: **`r paste(common_teams, collapse = ", ")`**. The rankings were **`r ifelse(same_ranking, "the same", "different")`** when the team names and their order were compared.
+The first team in the away-team table was **`r leading_away_team`**. This team appeared in `r leading_away_count` penalty-shootout matches as the away team.
 
-The difference between the two rankings may occur because teams can be recorded as the home team in some matches and the away team in other matches. These labels do not necessarily mean that the match was played in the team own country.
+There were `r number_common` teams that appeared in both top-five tables. These teams were **`r paste(common_teams, collapse = ", ")`**. The two rankings were **`r ifelse(same_ranking, "the same", "different")`** when I compared the team names and their order.
+
+The home and away rankings can be different because the home-team and away-team labels can change from one match to another match. In this dataset, being called the home team also does not always mean that the team played in its own country.
 
 \newpage
 
@@ -513,13 +581,13 @@ The difference between the two rankings may occur because teams can be recorded 
 
 ## Selected Factors and Rationale
 
-The two selected factors were `Stage` and `ExtraTime`.
+I selected `Stage` and `ExtraTime` as the two factors.
 
-`Stage` was selected because match conditions may differ between group-stage matches and knockout-stage matches. For example, teams may use different strategies in finals, semi-finals, or group-stage matches.
+I selected `Stage` because matches may be played differently at different parts of the tournament. For example, a group-stage match may not have the same situation as a semi-final or final match. Teams may use a different strategy because the importance of the match is different.
 
-`ExtraTime` was selected because matches that continue beyond regular time may have a different distribution of results compared with matches that finish during regular time.
+I selected `ExtraTime` because matches that continue after regular time may have a different result pattern. Extra time may happen when the teams are close in performance, so I wanted to compare these matches with the other matches.
 
-Frequency tables were used to show the number of home-team wins, away-team wins, and draws. Percentage tables were also created because the numbers of matches in the different groups are not equal. A proportional stacked bar chart was selected because it allows the three result categories to be compared within each group.
+I used frequency tables first because they show the number of home wins, away wins and draws. I also used row percentages because the number of matches was not the same in every group. The proportional bar charts make the three result categories easier to compare.
 
 ## Overall Match Results
 
@@ -528,6 +596,21 @@ Frequency tables were used to show the number of home-team wins, away-team wins,
 overall_result_table <- table(df$Result)
 
 overall_result_table
+
+# Put the Result categories in order
+# from the smallest count to the largest count.
+result_order <- names(sort(overall_result_table))
+
+# Give a light colour to the least common result
+# and a dark colour to the most common result.
+result_colours <- setNames(
+  c(
+    lightest_colour,
+    middle_colour,
+    darkest_colour
+  ),
+  result_order
+)
 
 # Find the most common match result.
 most_common_result <- names(overall_result_table)[
@@ -566,8 +649,17 @@ stage_result_percent
 
 ```{r question-4-stage-plot, fig.width=9, fig.height=6}
 # Create a proportional bar chart of Result for each Stage.
-ggplot(df, aes(x = Stage, fill = Result)) +
+ggplot(
+  df,
+  aes(
+    x = Stage,
+    fill = Result
+  )
+) +
   geom_bar(position = "fill") +
+  scale_fill_manual(
+    values = result_colours
+  ) +
   labs(
     title = "Match Results by Competition Stage",
     x = "Competition stage",
@@ -612,8 +704,17 @@ extra_time_result_percent
 
 ```{r question-4-extra-time-plot, fig.width=8, fig.height=5}
 # Create a proportional bar chart of Result by ExtraTime.
-ggplot(df, aes(x = ExtraTime, fill = Result)) +
+ggplot(
+  df,
+  aes(
+    x = ExtraTime,
+    fill = Result
+  )
+) +
   geom_bar(position = "fill") +
+  scale_fill_manual(
+    values = result_colours
+  ) +
   labs(
     title = "Match Results by Extra-Time Category",
     x = "Extra-time category",
@@ -653,7 +754,9 @@ rowSums(stage_result_percent)
 rowSums(extra_time_result_percent)
 ```
 
-`Result`, `Stage`, and `ExtraTime` should return `"factor"`. The missing-value checks should return zero. The totals from the two count tables should equal the total number of rows in `df`. Each row of the percentage tables should total approximately 100%. Small differences such as 99.9% or 100.1% may occur because the percentages were rounded.
+`Result`, `Stage` and `ExtraTime` should return `"factor"`. Their levels show the categories stored inside each variable.
+
+The missing-value checks should return zero. The total value from each count table should be equal to the number of rows in `df`. The rows in the percentage tables should add to around 100%. A result such as 99.9% or 100.1% can happen because the percentages were rounded.
 
 ## Results and Interpretation
 
@@ -693,13 +796,13 @@ highest_home_extra_percent <- extra_time_result_percent[
 ]
 ```
 
-Across all matches, the most common result was **`r most_common_result`**, which occurred in `r most_common_result_count` matches.
+For all matches, the most common result was **`r most_common_result`**. This result happened in `r most_common_result_count` matches.
 
-For competition stage, **`r highest_home_stage`** had the highest proportion of home-team wins, at `r highest_home_stage_percent`%. The percentage table and proportional bar chart show that the distribution of home-team wins, away-team wins, and draws was not identical across all competition stages. This suggests that `Stage` is associated with differences in match outcomes.
+For the competition stages, **`r highest_home_stage`** had the highest percentage of home-team wins, at `r highest_home_stage_percent`%. The percentage table shows that the result pattern was not exactly the same for every stage. Some stages had a higher percentage of home-team wins, while some stages had more away-team wins or draws.
 
-For extra time, category **`r highest_home_extra`** had the highest proportion of home-team wins, at `r highest_home_extra_percent`%. The percentage table and bar chart allow the result distribution for matches with different extra-time categories to be compared.
+For extra time, the category **`r highest_home_extra`** had the highest percentage of home-team wins, at `r highest_home_extra_percent`%. The chart also shows that the result distribution was different between the extra-time categories.
 
-These findings show associations in the FIFA World Cup dataset. They do not prove that competition stage or extra time directly caused a particular match result.
+These results show that `Stage` and `ExtraTime` have a relationship with match results in this dataset. However, the analysis does not prove that these two factors directly caused a home-team win, away-team win or draw. Other factors may also affect the match result.
 
 \newpage
 
