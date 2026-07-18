@@ -838,29 +838,43 @@ knitr::include_graphics("../figures/commit_history.png")
 
 ## Explanation of the Commit History
 
-The commit history shows that the project was developed gradually through several meaningful commits.
+The commit history shows that I developed the project step by step. I did not upload all the work in only one commit.
 
-1. **Create initial project structure**  
-   This commit created the main folders needed for the project.
+1. **Initial commit**  
+   This was the first commit used to start the repository.
 
-2. **Set up RStudio project and report template**  
-   This commit added the RStudio project file and the initial R Markdown report.
+2. **Create initial project structure**  
+   This commit created the main folders for the project, including the data, scripts, report and figures folders.
 
-3. **Add FIFA World Cup datasets**  
-   This commit added the four CSV datasets used in the analysis.
+3. **Set up RStudio project and report template**  
+   This commit added the RStudio project file and the first R Markdown report template.
 
-4. **Complete Question 1 data preparation and penalty analysis**  
-   This commit added the data preparation and penalty analysis for Question 1.
+4. **Add FIFA World Cup datasets**  
+   This commit added the four CSV datasets used for the assignment.
 
-5. **Complete Questions 1 and 2 data analysis**  
-   This commit added and improved the analyses for Questions 1 and 2.
+5. **Complete Question 1 data preparation and penalty analysis**  
+   This commit added the data cleaning and penalty analysis for Question 1.
 
-6. **Fix report paths and update Questions 1 and 2**  
-   This commit corrected the dataset paths and updated the report content.
+6. **Complete Questions 1 and 2 data analysis**  
+   This commit added the main analysis for Questions 1 and 2.
 
-7. **Complete Questions 3 and 4 analysis**  
-   This commit added the penalty-shootout rankings and match-outcome analysis.
+7. **Simplify code and complete Questions 1 and 2**  
+   This commit changed some code into simpler code and completed the first two questions.
 
-The commit messages describe the purpose of each change and demonstrate the progress of the project over time.
+8. **Change path of datasets**  
+   This commit changed the dataset paths so the files could be read correctly from the report folder.
 
+9. **Fix report paths and update Questions 1 and 2**  
+   This commit fixed more file-path problems and updated the content for Questions 1 and 2.
+
+10. **Complete Questions 3 and 4 analysis**  
+    This commit added the penalty-shootout rankings and the match-outcome analysis.
+
+11. **Complete Question 5 and final report**  
+    This commit added the GitHub section, the commit-history screenshot and the first final PDF report.
+
+12. **Revise explanations and update chart colours**  
+    This commit rewrote the rationale and explanation sections using simpler English. It also changed the charts to use the same colour palette.
+
+The commit messages show the main progress of my assignment. They also make it easier to understand what I changed at each stage.
 \newpage
