@@ -1,10 +1,9 @@
 ---
-title: "FIFA World Cup Data Analysis"
-author: "Nguyễn Đào Trường Vy"
-date: "07-16-2026"
+title: "FIFA World Cup Analysis"
+author: "Nguyen Dao Truong Vy"
 output:
-  html_document: default
   pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -19,7 +18,7 @@ library(tidyverse)
 
 # Student Information
 
-**Student Name:** Nguyễn Đào Trường Vy
+**Student Name:** Nguyen Dao Truong Vy
 
 **Student Number:** 22202382
 
@@ -36,7 +35,7 @@ By including this statement, we the authors of this work, verify that:
 
 - We hold a copy of this assignment that we can produce if the original is lost or damaged.
 
-- We hereby certify that no part of this assignment/product has been copied from any other student’s work or from any other source except where due acknowledgement is made in the assignment.
+- We hereby certify that no part of this assignment/product has been copied from any other student work or from any other source except where due acknowledgement is made in the assignment.
 
 - No part of this assignment/product has been written/produced for us by another person except where such collaboration has been authorised by the subject lecturer/tutor concerned.
 
@@ -506,7 +505,7 @@ The national team ranked first in the home-team table was **`r leading_home_team
 
 There were `r number_common` teams appearing in both top-five lists: **`r paste(common_teams, collapse = ", ")`**. The rankings were **`r ifelse(same_ranking, "the same", "different")`** when the team names and their order were compared.
 
-The difference between the two rankings may occur because teams can be recorded as the home team in some matches and the away team in other matches. These labels do not necessarily mean that the match was played in the team’s own country.
+The difference between the two rankings may occur because teams can be recorded as the home team in some matches and the away team in other matches. These labels do not necessarily mean that the match was played in the team own country.
 
 \newpage
 
@@ -706,21 +705,59 @@ These findings show associations in the FIFA World Cup dataset. They do not prov
 
 # Question 5: Git and GitHub
 
-## Repository Link
+## GitHub Repository
 
-https://github.com/yvette195/COMP1013-FIFA-WorldCup-Analysis
+Git and GitHub were used to manage the development of this project.
+
+The GitHub repository is available at:
+
+**https://github.com/yvette195/COMP1013-FIFA-WorldCup-Analysis**
+
+Git was used to record changes made to the project. GitHub was used to store the repository online and maintain a history of the project development.
 
 ## Project Folder Structure
 
-- `data/`: contains the original FIFA World Cup datasets.
-- `scripts/`: contains the separate R scripts used for Questions 1–4.
-- `report/`: contains the R Markdown source file and final PDF report.
-- `figures/`: stores figures or screenshots used in the report.
+The project was organised into separate folders:
+
+- `data/` contains the four FIFA World Cup datasets.
+- `scripts/` contains the R scripts used for Questions 1 to 4.
+- `report/` contains the R Markdown report.
+- `figures/` contains images used in the report.
+- `COMP1013-FIFA-WorldCup-Analysis.Rproj` is the RStudio project file.
+
+This folder structure keeps the datasets, scripts, report and figures separate, making the project easier to understand and maintain.
 
 ## Commit History
 
-_Insert the GitHub commit-history screenshot here._
+```{r question-5-commit-history, echo=FALSE, out.width="100%"}
+knitr::include_graphics("../figures/commit_history.png")
+```
 
-## Explanation of Commits
+## Explanation of the Commit History
 
-_To be completed after the final commit history is available._
+The commit history shows that the project was developed gradually through several meaningful commits.
+
+1. **Create initial project structure**  
+   This commit created the main folders needed for the project.
+
+2. **Set up RStudio project and report template**  
+   This commit added the RStudio project file and the initial R Markdown report.
+
+3. **Add FIFA World Cup datasets**  
+   This commit added the four CSV datasets used in the analysis.
+
+4. **Complete Question 1 data preparation and penalty analysis**  
+   This commit added the data preparation and penalty analysis for Question 1.
+
+5. **Complete Questions 1 and 2 data analysis**  
+   This commit added and improved the analyses for Questions 1 and 2.
+
+6. **Fix report paths and update Questions 1 and 2**  
+   This commit corrected the dataset paths and updated the report content.
+
+7. **Complete Questions 3 and 4 analysis**  
+   This commit added the penalty-shootout rankings and match-outcome analysis.
+
+The commit messages describe the purpose of each change and demonstrate the progress of the project over time.
+
+\newpage
